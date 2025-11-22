@@ -485,6 +485,16 @@ function App() {
     [answers, selectedFeelings]
   );
 
+  const renderServerText = (text, emptyLabel) => {
+    if (!text) {
+      return <p className="muted-text">{emptyLabel}</p>;
+    }
+    return text
+      .split(/\n+/)
+      .filter(Boolean)
+      .map((line, idx) => <p key={`${emptyLabel}-${idx}`}>{line}</p>);
+  };
+
   const handleFeelingToggle = (option) => {
     setSelectedFeelings((prev) => {
       const exists = prev.includes(option.id);
@@ -707,8 +717,17 @@ function App() {
     },
   ];
 
+  const hasServerInsights =
+    serverData.itineraryText ||
+    serverData.activitySuggestions ||
+    serverData.usefulLinks.length > 0 ||
+    serverData.weatherForecast ||
+    serverData.packingList ||
+    serverData.foodCultureInfo;
+
   return (
     <div className="app-shell">
+      {error && <div className="error-banner">{error}</div>}
       <header className="hero">
         <div>
           <p className="eyebrow">Travel Itinerary Lab · Group 3</p>
@@ -998,6 +1017,93 @@ function App() {
                 </ul>
               </div>
             ))}
+          </div>
+
+          <div className="server-section">
+            <div className="server-header">
+              <p className="eyebrow">Backend intelligence</p>
+              <h3>Agent-generated details</h3>
+              <p className="panel-subtitle">
+                Live outputs from the backend workflow that complement the UI plan.
+              </p>
+              {!hasServerInsights && !loadingPlan && (
+                <p className="muted-text">
+                  Generate an itinerary to pull in weather, packing, and activity insights.
+                </p>
+              )}
+            </div>
+            <div className="server-grid">
+              <div className="server-card">
+                <h4>Text itinerary</h4>
+                {renderServerText(
+                  serverData.itineraryText,
+                  loadingPlan
+                    ? "Fetching itinerary from backend agents..."
+                    : "Backend itinerary will appear here."
+                )}
+              </div>
+              <div className="server-card">
+                <h4>Activities + add-ons</h4>
+                {renderServerText(
+                  serverData.activitySuggestions,
+                  loadingPlan
+                    ? "Requesting tailored activity ideas..."
+                    : "Backend activities will appear here."
+                )}
+              </div>
+              <div className="server-card">
+                <h4>Weather forecast</h4>
+                {renderServerText(
+                  serverData.weatherForecast,
+                  loadingPlan
+                    ? "Checking the latest forecast..."
+                    : "Backend weather notes will appear here."
+                )}
+              </div>
+              <div className="server-card">
+                <h4>Packing list</h4>
+                {renderServerText(
+                  serverData.packingList,
+                  loadingPlan
+                    ? "Drafting a packing list..."
+                    : "Backend packing tips will appear here."
+                )}
+              </div>
+              <div className="server-card">
+                <h4>Food + culture</h4>
+                {renderServerText(
+                  serverData.foodCultureInfo,
+                  loadingPlan
+                    ? "Researching cultural notes..."
+                    : "Backend food and culture tips will appear here."
+                )}
+              </div>
+              <div className="server-card">
+                <h4>Useful links</h4>
+                {serverData.usefulLinks.length > 0 ? (
+                  <ul>
+                    {serverData.usefulLinks.map((link, idx) => (
+                      <li key={`${link.title || link.url || idx}`}>
+                        <a
+                          href={link.url || "#"}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {link.title || link.url || "Link"}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  renderServerText(
+                    "",
+                    loadingPlan
+                      ? "Collecting links from the backend..."
+                      : "Backend links will appear here."
+                  )
+                )}
+              </div>
+            </div>
           </div>
         </section>
       )}

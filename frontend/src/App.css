@@ -433,3 +433,62 @@ button:disabled {
     width: 100%;
   }
 }
+
+.error-banner {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  padding: 0.85rem 1rem;
+  border-radius: 16px;
+  font-weight: 600;
+}
+
+.muted-text {
+  color: #6b7280;
+}
+
+.server-section {
+  margin-top: 1.5rem;
+  background: #f8fafc;
+  border-radius: 20px;
+  padding: 1.25rem;
+  border: 1px solid rgba(99, 102, 241, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.server-header h3 {
+  margin: 0.25rem 0;
+}
+
+.server-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.server-card {
+  background: white;
+  border-radius: 16px;
+  padding: 1rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.06);
+}
+
+.server-card h4 {
+  margin: 0 0 0.5rem;
+}
+
+.server-card ul {
+  padding-left: 1.2rem;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.server-card a {
+  color: #1d4ed8;
+  text-decoration: none;
+}
