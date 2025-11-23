@@ -14,11 +14,17 @@ from agents import (
     packing_list_generator,
     recommend_activities,
     weather_forecaster,
+    feeling_options_agent,
+    question_bank_agent,
+    destination_blueprints_agent,
+    core_activities_agent,
 )
 
 # Load environment variables (e.g., SERPER_API_KEY for GoogleSerperAPIWrapper)
 load_dotenv()
 
+# In-memory cache
+cache = {}
 
 class PlannerState(TypedDict, total=False):
     """Shared structure for passing data between agents."""
@@ -105,6 +111,34 @@ app.add_middleware(
 @app.get("/health")
 async def health() -> Dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/api/feeling-options")
+async def feeling_options() -> List[Dict[str, Any]]:
+    if "feeling_options" not in cache:
+        cache["feeling_options"] = feeling_options_agent.generate_feeling_options({})["feeling_options"]
+    return cache["feeling_options"]
+
+
+@app.get("/api/question-bank")
+async def question_bank() -> List[Dict[str, Any]]:
+    if "question_bank" not in cache:
+        cache["question_bank"] = question_bank_agent.generate_question_bank({})["question_bank"]
+    return cache["question_bank"]
+
+
+@app.get("/api/destination-blueprints")
+async def destination_blueprints() -> List[Dict[str, Any]]:
+    if "destination_blueprints" not in cache:
+        cache["destination_blueprints"] = destination_blueprints_agent.generate_destination_blueprints({})["destination_blueprints"]
+    return cache["destination_blueprints"]
+
+
+@app.get("/api/core-activities")
+async def core_activities() -> Dict[str, List[Dict[str, Any]]]:
+    if "core_activities" not in cache:
+        cache["core_activities"] = core_activities_agent.generate_core_activities({})["core_activities"]
+    return cache["core_activities"]
 
 
 @app.post("/api/itinerary")
