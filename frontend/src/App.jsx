@@ -1,289 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { utils, writeFile } from "xlsx";
 import "./App.css";
-import { requestChat, requestItinerary } from "./api";
-
-const feelingOptions = [
-  {
-    id: "relax",
-    label: "Relaxed / Peaceful",
-    description: "Slow mornings, spa rituals, gentle nature.",
-    color: "#79c7b4",
-    gif: "https://media.giphy.com/media/l4KhQo2MESJkc6QbS/giphy.gif",
-    moodImages: [
-      "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=600&q=60",
-      "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=60",
-    ],
-  },
-  {
-    id: "adventure",
-    label: "Adventure / Thrill",
-    description: "Hikes, cliffs, adrenaline and bold colors.",
-    color: "#fe8c69",
-    gif: "https://media.giphy.com/media/3o6Zt7AC5JXRa1lEve/giphy.gif",
-    moodImages: [
-      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=60",
-      "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=600&q=60",
-    ],
-  },
-  {
-    id: "reconnect",
-    label: "Reconnection",
-    description: "Friends, family, cozy shared experiences.",
-    color: "#fbb14b",
-    gif: "https://media.giphy.com/media/3o7btPCcdNniyf0ArS/giphy.gif",
-    moodImages: [
-      "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=600&q=60",
-      "https://images.unsplash.com/photo-1486427944299-d1955d23e34d?auto=format&fit=crop&w=600&q=60",
-    ],
-  },
-  {
-    id: "food",
-    label: "Food Exploration",
-    description: "Markets, chef tables, spice routes.",
-    color: "#f07c82",
-    gif: "https://media.giphy.com/media/3oz8xAFtqoOUUrsh7W/giphy.gif",
-    moodImages: [
-      "https://images.unsplash.com/photo-1432139555190-58524dae6a55?auto=format&fit=crop&w=600&q=60",
-      "https://images.unsplash.com/photo-1466978913421-dad2ebd01d17?auto=format&fit=crop&w=600&q=60",
-    ],
-  },
-  {
-    id: "budget",
-    label: "Budget-Friendly",
-    description: "Smart hacks, local gems, shared transit.",
-    color: "#8c9eff",
-    gif: "https://media.giphy.com/media/3ornk57KwDXf81rjWM/giphy.gif",
-    moodImages: [
-      "https://images.unsplash.com/photo-1489365091240-6a18fc761ec2?auto=format&fit=crop&w=600&q=60",
-      "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=600&q=60",
-    ],
-  },
-  {
-    id: "celebrate",
-    label: "Celebration",
-    description: "Sparkle, hidden rooftops, surprise moments.",
-    color: "#d0a5ff",
-    gif: "https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif",
-    moodImages: [
-      "https://images.unsplash.com/photo-1486428263684-5413e434ad35?auto=format&fit=crop&w=600&q=60",
-      "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=600&q=60",
-    ],
-  },
-];
-
-const questionBank = [
-  {
-    id: "travelDates",
-    icon: "🗓️",
-    question: "When are you hoping to travel?",
-    type: "text",
-    placeholder: "e.g., June 5 – 10, 2025",
-    helper: "We’ll keep weather and seasonal vibes in mind.",
-  },
-  {
-    id: "climate",
-    icon: "🌡️",
-    question: "Are you leaning toward cooler or warmer weather?",
-    type: "choice",
-    options: ["Cooler", "Warmer", "Surprise me"],
-  },
-  {
-    id: "pace",
-    icon: "⏰",
-    question: "What pace feels right on this trip?",
-    type: "choice",
-    options: ["Slow + mindful", "Balanced mix", "High-energy"],
-  },
-  {
-    id: "kidFriendly",
-    icon: "🧒",
-    question: "Should we include kid-friendly activities?",
-    type: "choice",
-    options: ["Definitely", "Not needed"],
-    dependsOn: (feelings) => feelings.includes("reconnect"),
-  },
-  {
-    id: "mobility",
-    icon: "🧭",
-    question: "How much moving around is comfortable?",
-    type: "choice",
-    options: ["Keep it close", "Happy to explore"],
-  },
-  {
-    id: "budget",
-    icon: "💰",
-    question: "How should we treat the budget?",
-    type: "choice",
-    options: ["Budget-friendly", "Balanced", "All-out celebration"],
-  },
-  {
-    id: "goal",
-    icon: "🎯",
-    question: "Any personal story or goal we should honor?",
-    type: "text",
-    placeholder: "e.g., celebrating a promotion",
-  },
-  {
-    id: "destination",
-    icon: "📍",
-    question: "Already have a destination or neighborhood?",
-    type: "text",
-    placeholder: "Optional: e.g., south Maui near Wailea",
-  },
-];
-
-const destinationBlueprints = [
-  {
-    id: "bali",
-    destination: "Ubud, Bali",
-    feelings: ["relax", "reconnect", "celebrate"],
-    climate: "warmer",
-    budget: "balanced",
-    description:
-      "Jungle villas, sunrise rice fields, spa rituals, and candlelit dinners.",
-    mapAnchor: "Ubud Bali",
-    highlight: "waterfall meditation and floating breakfast",
-  },
-  {
-    id: "azores",
-    destination: "São Miguel, Azores",
-    feelings: ["adventure", "budget"],
-    climate: "cooler",
-    budget: "budget-friendly",
-    description:
-      "Crater lakes, cliff-side hikes, geothermal pools, and whale watching.",
-    mapAnchor: "Sete Cidades Azores",
-    highlight: "volcanic hot springs under the stars",
-  },
-  {
-    id: "lisbon",
-    destination: "Lisbon & Cascais, Portugal",
-    feelings: ["food", "celebrate", "budget"],
-    climate: "warmer",
-    budget: "balanced",
-    description:
-      "Tile-covered alleys, pastel de nata crawls, coastal sunset picnics.",
-    mapAnchor: "Time Out Market Lisbon",
-    highlight: "chef-led market tasting trail",
-  },
-  {
-    id: "banff",
-    destination: "Banff & Lake Louise, Canada",
-    feelings: ["adventure", "reconnect"],
-    climate: "cooler",
-    budget: "balanced",
-    description:
-      "Glacial lakes, gondola sunsets, alpine picnics, and cozy fireside chats.",
-    mapAnchor: "Lake Louise",
-    highlight: "canoe ride with hot cocoa stop",
-  },
-];
-
-const coreActivities = {
-  relax: [
-    {
-      title: "Morning forest bathing",
-      detail: "Guided breathing walk between rice terraces.",
-      mapQuery: "Campuhan Ridge Walk",
-    },
-    {
-      title: "Spa + herbal compresses",
-      detail: "Choose a Balinese massage with jasmine oils.",
-      mapQuery: "Ubud spa",
-    },
-    {
-      title: "Floating brunch",
-      detail: "Indulge in tropical fruit platters and made-to-order crepes.",
-      mapQuery: "Kayon Jungle Resort",
-    },
-    {
-      title: "Sunset sound bath",
-      detail: "Chimes + bowls while lanterns glow above the jungle.",
-      mapQuery: "Pyramids of Chi",
-    },
-  ],
-  adventure: [
-    {
-      title: "Dawn ridge hike",
-      detail: "4-mile ridge trail before the clouds roll in.",
-      mapQuery: "Miradouro da Boca do Inferno Azores",
-    },
-    {
-      title: "Coasteering splash",
-      detail: "Guided cliff jumps with wet suit + GoPro footage.",
-      mapQuery: "Azores coasteering",
-    },
-    {
-      title: "Mountain biking",
-      detail: "Flowy single track through spruce forests.",
-      mapQuery: "Banff mountain biking",
-    },
-    {
-      title: "Thermal night soak",
-      detail: "Recharge with star-filled geothermal pools.",
-      mapQuery: "Caldeira Velha",
-    },
-  ],
-  reconnect: [
-    {
-      title: "Family storytelling brunch",
-      detail: "Prompt cards + shared playlists.",
-      mapQuery: "Lisbon brunch cafes",
-    },
-    {
-      title: "Hands-on cooking lab",
-      detail: "Teach the kids to fold dumplings or pasteis.",
-      mapQuery: "Lisbon cooking class",
-    },
-    {
-      title: "Analog game night",
-      detail: "Retro board games delivered to your stay.",
-      mapQuery: "Lisbon board game cafe",
-    },
-  ],
-  food: [
-    {
-      title: "Market tasting trail",
-      detail: "Chef-led tour with at least six sweet + savory bites.",
-      mapQuery: "Time Out Market",
-    },
-    {
-      title: "Neighborhood food crawl",
-      detail: "Walkable bites through pastel facades.",
-      mapQuery: "Alfama Lisbon food",
-    },
-    {
-      title: "Winemaker sunset table",
-      detail: "Small vineyard dinner overlooking the coast.",
-      mapQuery: "Sintra vineyard dinner",
-    },
-  ],
-  budget: [
-    {
-      title: "DIY biking tour",
-      detail: "Rent bikes + follow our downloaded voice guide.",
-      mapQuery: "Lisbon bike rental",
-    },
-    {
-      title: "Street food picnic",
-      detail: "Market snacks paired with reusable plates + cutlery.",
-      mapQuery: "Lisbon street food",
-    },
-  ],
-  celebrate: [
-    {
-      title: "Private rooftop toast",
-      detail: "String lights, playlist, polaroid station.",
-      mapQuery: "Lisbon rooftop bar",
-    },
-    {
-      title: "Secret supper",
-      detail: "Chef invites you to an unlisted tasting counter.",
-      mapQuery: "Lisbon secret supper club",
-    },
-  ],
-};
+import {
+  getCoreActivities,
+  getDestinationBlueprints,
+  getFeelingOptions,
+  getQuestionBank,
+  requestChat,
+  requestItinerary,
+} from "./api";
 
 const initialMessage = {
   id: "intro",
@@ -308,76 +33,6 @@ const buildAssistantReply = (text, feelings) => {
   return "Got it. Keep sharing anything that feels true and I’ll keep shaping the vibe.";
 };
 
-const selectBlueprint = (feelings, answers) => {
-  if (!feelings.length) return destinationBlueprints[0];
-  let best = destinationBlueprints[0];
-  let bestScore = -1;
-  destinationBlueprints.forEach((blueprint) => {
-    let score = 0;
-    feelings.forEach((f) => {
-      if (blueprint.feelings.includes(f)) score += 2;
-    });
-    if (
-      answers.climate &&
-      blueprint.climate === answers.climate.toLowerCase()
-    ) {
-      score += 1;
-    }
-    if (
-      answers.budget &&
-      blueprint.budget === answers.budget.toLowerCase()
-    ) {
-      score += 1;
-    }
-    if (score > bestScore) {
-      best = blueprint;
-      bestScore = score;
-    }
-  });
-  return best;
-};
-
-const buildDailyPlan = (feelings, blueprint, answers) => {
-  const prioritizedFeelings = feelings.length
-    ? feelings
-    : ["relax", "food", "adventure"];
-  const plan = [];
-  const timeBlocks = ["Morning", "Afternoon", "Evening"];
-  for (let day = 1; day <= 3; day += 1) {
-    const activities = [];
-    timeBlocks.forEach((block, idx) => {
-      const feelingKey =
-        prioritizedFeelings[(day + idx - 1) % prioritizedFeelings.length];
-      const pool = coreActivities[feelingKey] ?? [];
-      const activity = pool[(day + idx) % pool.length];
-      if (activity) {
-        activities.push({
-          ...activity,
-          time: block,
-          notes:
-            answers.mobility === "Keep it close"
-              ? "Within a 15-minute ride"
-              : "Expect light transit",
-          mapLink: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-            activity.mapQuery
-          )}`,
-        });
-      }
-    });
-    plan.push({
-      day: `Day ${day}`,
-      focus:
-        day === 1
-          ? "Arrival & orientation"
-          : day === 2
-          ? "Deep dive moments"
-          : "Wrap-up with delight",
-      activities,
-    });
-  }
-  return plan;
-};
-
 const summarizePreferences = (feelings, answers) => {
   const chips = [];
   if (feelings.length) {
@@ -396,6 +51,13 @@ const summarizePreferences = (feelings, answers) => {
 };
 
 function App() {
+  const [staticData, setStaticData] = useState({
+    feelingOptions: [],
+    questionBank: [],
+    destinationBlueprints: [],
+    coreActivities: {},
+  });
+  const [loadingStatic, setLoadingStatic] = useState(true);
   const [selectedFeelings, setSelectedFeelings] = useState([]);
   const [messages, setMessages] = useState([initialMessage]);
   const [inputValue, setInputValue] = useState("");
@@ -420,19 +82,61 @@ function App() {
     chatHistory: [],
   });
 
+  const {
+    feelingOptions,
+    questionBank,
+    destinationBlueprints,
+    coreActivities,
+  } = staticData;
+
   const activeQuestions = useMemo(
     () =>
-      questionBank.filter(
-        (question) =>
-          !question.dependsOn || question.dependsOn(selectedFeelings)
-      ),
-    [selectedFeelings]
+      questionBank.filter((question) => {
+        if (!question.dependsOn) {
+          return true;
+        }
+        const { field, value } = question.dependsOn;
+        if (field === "feelings") {
+          return selectedFeelings.includes(value);
+        }
+        return true;
+      }),
+    [selectedFeelings, questionBank]
   );
   const currentQuestion = activeQuestions[questionIndex];
   const preferenceChips = summarizePreferences(selectedFeelings, answers);
   const readyForPlan =
     selectedFeelings.length > 0 &&
     (!currentQuestion || questionIndex >= activeQuestions.length);
+
+  useEffect(() => {
+    async function loadStaticData() {
+      try {
+        const [
+          feelingOptions,
+          questionBank,
+          destinationBlueprints,
+          coreActivities,
+        ] = await Promise.all([
+          getFeelingOptions(),
+          getQuestionBank(),
+          getDestinationBlueprints(),
+          getCoreActivities(),
+        ]);
+        setStaticData({
+          feelingOptions,
+          questionBank,
+          destinationBlueprints,
+          coreActivities,
+        });
+      } catch (err) {
+        setError(err.message || "Unable to load static data.");
+      } finally {
+        setLoadingStatic(false);
+      }
+    }
+    loadStaticData();
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -571,14 +275,39 @@ function App() {
   const handleGenerateItinerary = async () => {
     setError("");
     setLoadingPlan(true);
-    const blueprint = selectBlueprint(selectedFeelings, answers);
-    const dailyPlan = buildDailyPlan(selectedFeelings, blueprint, answers);
-    const gifFallback =
-      feelingOptions.find((f) => f.id === selectedFeelings[0])?.gif ||
-      "https://media.giphy.com/media/l41lISBV5k3u1Q4Fa/giphy.gif";
+    const destinationForApi = answers.destination || "your destination";
+    try {
+      const backendResult = await requestItinerary(
+        buildPreferencesPayload(destinationForApi)
+      );
+      setServerData({
+        itineraryText: backendResult.itinerary?.text || "",
+        activitySuggestions: backendResult.activity_suggestions || "",
+        usefulLinks: backendResult.useful_links || [],
+        weatherForecast: backendResult.weather_forecast || "",
+        packingList: backendResult.packing_list || "",
+        foodCultureInfo: backendResult.food_culture_info || "",
+        chatHistory: backendResult.chat_history || [],
+      });
+
+      const blueprint =
+        destinationBlueprints.find(
+          (bp) =>
+            bp.destination.toLowerCase() ===
+            (backendResult.preferences?.destination?.toLowerCase() || "")
+        ) || destinationBlueprints[0];
+
+      const dailyPlan = backendResult.itinerary?.days || [];
+
+      const gifFallback =
+        staticData.feelingOptions.find((f) => f.id === selectedFeelings[0])
+          ?.gif || "https://media.giphy.com/media/l41lISBV5k3u1Q4Fa/giphy.gif";
     const moodImages =
-      feelingOptions.find((f) => f.id === selectedFeelings[0])?.moodImages ||
-      feelingOptions.flatMap((option) => option.moodImages).slice(0, 2);
+      staticData.feelingOptions.find((f) => f.id === selectedFeelings[0])
+        ?.moodImages ||
+      staticData.feelingOptions
+        .flatMap((option) => option.moodImages)
+        .slice(0, 2);
     const finalDestination = answers.destination || blueprint.destination;
     const vibeSummary = selectedFeelings.length
       ? selectedFeelings.join(", ")
@@ -603,19 +332,6 @@ function App() {
         text: `Here’s a plan for ${finalDestination}. Feel free to reorder activities or download the Excel itinerary.`,
       },
     ]);
-    try {
-      const backendResult = await requestItinerary(
-        buildPreferencesPayload(finalDestination)
-      );
-      setServerData({
-        itineraryText: backendResult.itinerary || "",
-        activitySuggestions: backendResult.activity_suggestions || "",
-        usefulLinks: backendResult.useful_links || [],
-        weatherForecast: backendResult.weather_forecast || "",
-        packingList: backendResult.packing_list || "",
-        foodCultureInfo: backendResult.food_culture_info || "",
-        chatHistory: backendResult.chat_history || [],
-      });
     } catch (err) {
       setError(err.message || "Unable to reach the itinerary service.");
     } finally {
@@ -707,6 +423,20 @@ function App() {
     },
   ];
 
+  if (loadingStatic) {
+    return (
+      <div className="app-shell">
+        <header className="hero">
+          <div>
+            <p className="eyebrow">Travel Itinerary Lab · Group 3</p>
+            <h1>Plan by feeling, not by pin.</h1>
+            <p className="lead">Loading planner configuration...</p>
+          </div>
+        </header>
+      </div>
+    );
+  }
+
   return (
     <div className="app-shell">
       <header className="hero">
@@ -722,7 +452,7 @@ function App() {
             <button
               className="primary"
               onClick={handleGenerateItinerary}
-              disabled={!readyForPlan || loadingPlan}
+              disabled={!readyForPlan || loadingPlan || loadingStatic}
             >
               {loadingPlan ? "Generating..." : "Generate itinerary"}
             </button>
