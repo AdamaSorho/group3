@@ -1,5 +1,6 @@
 import json
-from typing import Any, Dict, List, Optional, TypedDict
+from typing import Any, Dict, List, Optional
+from typing_extensions import TypedDict
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException

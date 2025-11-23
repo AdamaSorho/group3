@@ -1,6 +1,7 @@
 import streamlit as st
 import json
-from typing import TypedDict, Annotated
+from typing_extensions import TypedDict
+from typing import Annotated
 from langgraph.graph import StateGraph, END
 from langchain_core.messages import HumanMessage
 from langchain_community.utilities import GoogleSerperAPIWrapper
